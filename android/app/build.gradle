@@ -1,0 +1,44 @@
+plugins {
+  id 'com.android.application'
+}
+
+android {
+  namespace 'com.ahmadalzan.exam'
+  compileSdk 34
+
+  defaultConfig {
+    applicationId 'com.ahmadalzan.exam'
+    minSdk 24
+    targetSdk 34
+    versionCode 1
+    versionName '1.0'
+    resConfigs 'ar', 'en'
+  }
+
+  // The whole website is copied into src/main/assets/www by the build workflow.
+  // Nothing is fetched from the internet at runtime apart from the optional web fonts.
+
+  buildTypes {
+    debug {
+      applicationIdSuffix ''
+    }
+    release {
+      minifyEnabled false
+      signingConfig signingConfigs.debug
+    }
+  }
+
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_17
+    targetCompatibility JavaVersion.VERSION_17
+  }
+
+  lint {
+    abortOnError false
+    checkReleaseBuilds false
+  }
+}
+
+dependencies {
+  implementation 'androidx.webkit:webkit:1.11.0'
+}

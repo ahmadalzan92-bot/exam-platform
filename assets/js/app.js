@@ -37,8 +37,26 @@
     if (p >= 60) return { label: 'مقبول', cls: 'warn' };
     return { label: 'ضعيف', cls: 'err' };
   }
+  function b64Utf8(str) {
+    const bytes = new TextEncoder().encode(str);
+    let bin = '';
+    const chunk = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunk) {
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+    }
+    return btoa(bin);
+  }
+
   function download(filename, content, mime) {
-    const blob = new Blob(['\ufeff' + content], { type: (mime || 'text/plain') + ';charset=utf-8' });
+    const type = mime || 'text/plain';
+    /* داخل تطبيق الأندرويد: الحفظ يتم في مجلد التنزيلات عبر الجسر الأصلي */
+    if (window.AndroidApp && typeof window.AndroidApp.saveFile === 'function') {
+      try {
+        window.AndroidApp.saveFile(filename, type, b64Utf8('\ufeff' + content));
+        return;
+      } catch (e) { /* نتابع بالطريقة العادية */ }
+    }
+    const blob = new Blob(['\ufeff' + content], { type: type + ';charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = filename; document.body.appendChild(a); a.click();
@@ -1079,7 +1097,7 @@
         case 'retry-wrong': retryWrong(); break;
         case 'filter': setResultFilter(el.dataset.filter); break;
         case 'expand-all': toggleExpandAll(); break;
-        case 'print': window.print(); break;
+        case 'print': if (window.AndroidApp && typeof window.AndroidApp.printPage === 'function') { window.AndroidApp.printPage(); } else { window.print(); } break;
         case 'export-wrong': if (State.lastAttempt) exportWrongCSV(State.lastAttempt); break;
 
         /* البنك */
