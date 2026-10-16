@@ -29,14 +29,20 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK packages
+      - name: Prepare Android SDK
         run: |
-          yes | sdkmanager --licenses > /dev/null 2>&1 || true
-          sdkmanager "platforms;android-34" "build-tools;34.0.0" > /dev/null
-          echo "ANDROID_HOME=$ANDROID_HOME"
+          SDK="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          echo "SDK=$SDK"
+          CMDBIN=$(ls -d "$SDK"/cmdline-tools/*/bin 2>/dev/null | head -1)
+          echo "cmdline-tools bin: $CMDBIN"
+          echo "$CMDBIN" >> "$GITHUB_PATH"
+          echo "sdk.dir=$SDK" > android/local.properties
+          yes | "$CMDBIN/sdkmanager" --licenses > /dev/null 2>&1 || true
+          "$CMDBIN/sdkmanager" "platforms;android-34" "build-tools;34.0.0" > /dev/null 2>&1 || true
+          echo "----- installed platforms -----"
+          ls "$SDK/platforms" || true
+          echo "----- installed build-tools -----"
+          ls "$SDK/build-tools" || true
 
       - name: Install Gradle 8.7
         run: |
