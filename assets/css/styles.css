@@ -547,3 +547,138 @@ table.data tbody tr:last-child td { border-bottom:none; }
   .print-credit, .exam-credit, .credit-line, .print-credit b, .exam-credit b, .credit-line b { color:#000 !important; }
   .exam-credit svg { color:#000 !important; }
 }
+
+/* ============================================================
+   شاشة الدخول والحسابات
+   ============================================================ */
+.login-wrap {
+  min-height: calc(100vh - 210px);
+  display:flex; align-items:center; justify-content:center;
+  padding: 8px 0 20px;
+}
+.login-card {
+  width:100%; max-width: 560px;
+  background: var(--surface);
+  border:1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  padding: 30px 26px 22px;
+}
+.login-brand { text-align:center; margin-bottom: 22px; }
+.login-logo {
+  width:64px; height:64px; border-radius:20px; margin:0 auto 14px; display:grid; place-items:center;
+  color:#fff; background: linear-gradient(140deg, var(--brand-500), var(--brand-700s));
+  box-shadow: 0 10px 24px rgba(15,123,80,.32);
+}
+.login-brand h1 { margin:0 0 6px; font-size:1.42rem; font-weight:800; letter-spacing:-.3px; }
+.login-brand p { margin:0; color: var(--text-mute); font-size:.9rem; }
+.login-brand .brand-credit { margin-top:8px; display:block; font-size:.8rem; }
+
+.login-sep {
+  display:flex; align-items:center; gap:10px; margin: 18px 0 14px;
+  color: var(--text-mute); font-size:.82rem; font-weight:700;
+}
+.login-sep::before, .login-sep::after {
+  content:''; flex:1; height:1px; background: var(--border);
+}
+
+.user-list { display:flex; flex-direction:column; gap:10px; }
+.user-card {
+  display:flex; align-items:center; gap:12px;
+  width:100%; text-align:start;
+  background: var(--surface-2); border:1px solid var(--border);
+  border-radius: var(--radius); padding:12px 14px;
+  cursor:pointer; transition:.16s; font-family:inherit; color:inherit;
+}
+.user-card:hover { border-color: var(--brand-400); background: var(--brand-50); transform: translateY(-1px); }
+html[data-theme="dark"] .user-card:hover { background: rgba(31,151,100,.12); }
+.user-avatar {
+  width:44px; height:44px; border-radius:14px; flex:none; display:grid; place-items:center;
+  font-weight:800; font-size:1.1rem; color:#fff;
+  background: linear-gradient(140deg, var(--brand-500), var(--brand-700s));
+}
+.user-card-info { flex:1; min-width:0; }
+.user-card-info strong { display:block; font-size:1rem; font-weight:800; }
+.user-card-meta { display:block; color: var(--text-mute); font-size:.79rem; margin-top:2px; }
+.user-card-lock { color: var(--text-mute); flex:none; }
+.user-del {
+  flex:none; width:34px; height:34px; border-radius:10px; display:grid; place-items:center;
+  border:1px solid var(--border); background: var(--surface); color: var(--text-mute);
+  cursor:pointer; transition:.16s;
+}
+.user-del:hover { color: var(--err-500); border-color: var(--err-500); background: var(--err-50); }
+
+.login-form { display:flex; flex-direction:column; gap:14px; }
+.login-form .field { gap:6px; }
+.login-form input {
+  font-family:inherit; font-size:1rem; padding:11px 13px; border-radius: var(--radius-sm);
+  border:1px solid var(--border); background: var(--surface-2); color: var(--text);
+  transition:.16s; width:100%;
+}
+.login-form input:focus { outline:none; border-color: var(--brand-400); background: var(--surface); box-shadow: var(--ring); }
+.login-form .hint { color: var(--text-mute); font-size:.78rem; }
+.login-actions { display:flex; gap:10px; flex-wrap:wrap; }
+.login-actions .btn { flex:1; min-width:130px; justify-content:center; }
+
+.login-error {
+  background: var(--err-50); border:1px solid rgba(220,38,38,.35); color: var(--err-600);
+  border-radius: var(--radius-sm); padding:10px 12px; font-size:.86rem; font-weight:700;
+}
+html[data-theme="dark"] .login-error { color:#fca5a5; }
+.login-note {
+  background: var(--info-50); border:1px solid rgba(37,99,235,.25); color:#1e40af;
+  border-radius: var(--radius-sm); padding:10px 12px; font-size:.82rem; line-height:1.7;
+}
+html[data-theme="dark"] .login-note { color:#bfdbfe; }
+
+.pin-input {
+  text-align:center; letter-spacing:.4em; font-size:1.4rem !important; font-weight:800;
+  padding:14px !important; direction:ltr;
+}
+.pin-user {
+  display:flex; align-items:center; gap:12px; justify-content:center;
+  margin-bottom:6px;
+}
+.pin-user .user-avatar { width:56px; height:56px; border-radius:18px; font-size:1.4rem; }
+.pin-user strong { font-size:1.15rem; }
+
+.login-credit {
+  margin-top:20px; padding-top:14px; border-top:1px dashed var(--border);
+  text-align:center; color: var(--text-mute); font-size:.8rem; font-weight:700;
+}
+.login-credit b { color: var(--brand-700s); font-weight:800; }
+html[data-theme="dark"] .login-credit b { color: var(--brand-200); }
+
+/* شريحة المستخدم في الشريط العلوي */
+.user-chip {
+  display:flex; align-items:center; gap:8px; max-width:190px;
+  border:1px solid var(--border); background: var(--surface); color: var(--text);
+  border-radius: 999px; padding:4px 12px 4px 4px; cursor:pointer; transition:.16s;
+  font-family:inherit;
+}
+html[dir="rtl"] .user-chip { padding:4px 4px 4px 12px; }
+.user-chip:hover { border-color: var(--brand-400); background: var(--surface-2); }
+.user-chip .user-avatar {
+  width:32px; height:32px; border-radius:50%; font-size:.9rem; flex:none;
+}
+.user-chip .user-name {
+  font-size:.86rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+@media (max-width: 720px) {
+  .user-chip .user-name { display:none; }
+  .user-chip { padding:4px !important; }
+  .login-card { padding:22px 16px 16px; border-radius: var(--radius-lg); }
+  .login-brand h1 { font-size:1.2rem; }
+}
+
+/* بطاقة الحساب في الإعدادات */
+.account-row {
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  background: var(--surface-2); border:1px solid var(--border);
+  border-radius: var(--radius); padding:12px 14px;
+}
+.account-row .user-avatar { width:46px; height:46px; }
+.account-info { flex:1; min-width:160px; }
+.account-info strong { display:block; font-weight:800; font-size:1.02rem; }
+.account-info span { color: var(--text-mute); font-size:.82rem; }
+.account-actions { display:flex; gap:8px; flex-wrap:wrap; }

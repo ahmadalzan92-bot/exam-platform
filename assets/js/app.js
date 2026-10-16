@@ -118,18 +118,29 @@
     timerId: null,
     setup: { source: 'set', setId: null, count: 'all' },
     resultFilter: 'wrong',
-    reviewExpanded: {}
+    reviewExpanded: {},
+    login: { mode: 'list', userId: null, error: '' }
   };
 
   /* ---------------- التنقل ---------------- */
   function setNav(name) {
     $$('#mainNav .nav-btn').forEach(b => b.classList.toggle('is-active', b.dataset.nav === name));
   }
+  function setChrome(locked) {
+    const nav = $('#mainNav');
+    const chip = $('#userChip');
+    const footer = document.querySelector('.site-footer');
+    if (nav) nav.hidden = locked;
+    if (chip) chip.hidden = locked || !Session.current();
+    if (footer) footer.hidden = locked;
+    document.body.classList.toggle('is-locked', locked);
+  }
   function showView(name) {
     State.view = name;
     $$('#app .view').forEach(v => { v.hidden = v.id !== 'view-' + name; });
+    setChrome(name === 'login');
     setNav(name);
-    $('#mainNav').classList.remove('open');
+    if ($('#mainNav')) $('#mainNav').classList.remove('open');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   function refreshBadges() {
@@ -137,6 +148,199 @@
     const badge = $('#navBankBadge');
     badge.hidden = n === 0;
     badge.textContent = n;
+  }
+
+  /* ============================================================
+     شاشة الدخول — حساب لكل مستخدم وبيانات منفصلة
+     ============================================================ */
+  function initial(name) {
+    const s = String(name || '؟').trim();
+    return s ? s.charAt(0) : '؟';
+  }
+  function userMeta(u) {
+    const st = Users.stats(u.id);
+    const parts = [];
+    if (st.attempts) parts.push(st.attempts + ' محاولة');
+    if (Users.hasPin(u)) parts.push('محمي برمز');
+    if (!parts.length) parts.push('لا نتائج بعد');
+    return parts.join(' • ');
+  }
+  function loginLogo() {
+    return '<div class="login-logo">' +
+      '<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M4 19v-6a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v6"/><path d="M8 9V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v3"/>' +
+      '<circle cx="9" cy="13.5" r="1"/><circle cx="15" cy="13.5" r="1"/><path d="M10 17h4"/></svg>' +
+      '</div>';
+  }
+  function loginHeader() {
+    return '<div class="login-brand">' + loginLogo() +
+      '<h1>منصة الامتحان المحوسب</h1>' +
+      '<p>علوم الإنتاج الحيواني — وزارة الزراعة</p>' +
+      '<span class="brand-credit">إعداد وتصميم <b>المهندس أحمد الزن</b></span>' +
+      '</div>';
+  }
+  function loginError() {
+    if (!State.login.error) return '';
+    return '<div class="login-error">' + escapeHtml(State.login.error) + '</div>';
+  }
+  function renderLogin() {
+    const host = $('#view-login');
+    if (!host) return;
+    const users = Users.all();
+    const st = State.login;
+    let body = '';
+
+    if (!users.length) {
+      /* أول استخدام: إنشاء الحساب الأول */
+      body += '<div class="login-note">هذه أول مرة تُستخدم فيها المنصة على هذا الجهاز. أنشئ حسابك ليُحفظ تقدّمك (النتائج وبنك الأخطاء) بشكل منفصل عن أي مستخدم آخر.</div>';
+      body += loginError();
+      body += createUserForm(true);
+    } else if (st.mode === 'new') {
+      body += loginError();
+      body += createUserForm(false);
+    } else if (st.mode === 'pin') {
+      const u = Users.find(st.userId);
+      if (!u) { st.mode = 'list'; st.userId = null; return renderLogin(); }
+      body += '<div class="pin-user"><span class="user-avatar">' + escapeHtml(initial(u.name)) + '</span>' +
+        '<div><strong>' + escapeHtml(u.name) + '</strong></div></div>';
+      body += loginError();
+      body += '<form class="login-form" data-login-form="pin">' +
+        '<div class="field"><label for="loginPin">رمز الدخول</label>' +
+        '<input class="pin-input" id="loginPin" type="password" inputmode="numeric" autocomplete="off" placeholder="••••" /></div>' +
+        '<div class="login-actions">' +
+        '<button class="btn btn-primary" type="submit">دخول</button>' +
+        '<button class="btn btn-ghost" type="button" data-action="login-cancel">رجوع</button>' +
+        '</div></form>';
+    } else {
+      body += '<div class="login-sep">اختر حسابك</div>';
+      body += '<div class="user-list">';
+      users.forEach(u => {
+        body += '<div class="user-card" data-action="login-pick" data-id="' + escapeHtml(u.id) + '" role="button" tabindex="0">' +
+          '<span class="user-avatar">' + escapeHtml(initial(u.name)) + '</span>' +
+          '<span class="user-card-info"><strong>' + escapeHtml(u.name) + '</strong>' +
+          '<span class="user-card-meta">' + escapeHtml(userMeta(u)) + '</span></span>' +
+          (Users.hasPin(u) ? '<span class="user-card-lock" title="محمي برمز">' + iconLock(16) + '</span>' : '') +
+          '<button class="user-del" type="button" data-action="login-delete" data-id="' + escapeHtml(u.id) + '" title="حذف الحساب">' + iconTrash(15) + '</button>' +
+          '</div>';
+      });
+      body += '</div>';
+      body += loginError();
+      body += '<div class="login-actions" style="margin-top:16px">' +
+        '<button class="btn btn-primary" type="button" data-action="login-new">' + iconPlus(16) + ' مستخدم جديد</button>' +
+        '</div>';
+    }
+
+    host.innerHTML = '<div class="login-wrap"><div class="login-card">' + loginHeader() + body +
+      '<div class="login-credit">إعداد وتصميم <b>المهندس أحمد الزن</b></div>' +
+      '</div></div>';
+  }
+  function createUserForm(isFirst) {
+    return '<form class="login-form" data-login-form="create">' +
+      (isFirst ? '' : '<div class="login-sep">مستخدم جديد</div>') +
+      '<div class="field"><label for="newUserName">الاسم</label>' +
+      '<input id="newUserName" type="text" maxlength="40" autocomplete="off" placeholder="مثال: أحمد الزن" /></div>' +
+      '<div class="field"><label for="newUserPin">رمز الدخول (اختياري)</label>' +
+      '<input id="newUserPin" type="password" inputmode="numeric" autocomplete="off" placeholder="اتركه فارغاً للدخول المباشر" /></div>' +
+      '<div class="field"><label for="newUserPin2">تأكيد الرمز</label>' +
+      '<input id="newUserPin2" type="password" inputmode="numeric" autocomplete="off" /></div>' +
+      '<span class="hint">الرمز اختياري — إن وضعته فسيُطلب عند الدخول إلى هذا الحساب.</span>' +
+      '<div class="login-actions">' +
+      '<button class="btn btn-primary" type="submit">' + (isFirst ? 'إنشاء الحساب والدخول' : 'إنشاء ودخول') + '</button>' +
+      (isFirst ? '' : '<button class="btn btn-ghost" type="button" data-action="login-cancel">رجوع</button>') +
+      '</div></form>';
+  }
+  function doLogin(id) {
+    Session.login(id);
+    location.reload();
+  }
+  function submitPinForm() {
+    const u = Users.find(State.login.userId);
+    const input = $('#loginPin');
+    if (!u || !input) return;
+    if (Users.verify(u, input.value)) {
+      doLogin(u.id);
+    } else {
+      State.login.error = 'رمز الدخول غير صحيح';
+      renderLogin();
+    }
+  }
+  function submitCreateForm() {
+    const name = ($('#newUserName') || {}).value || '';
+    const pin = ($('#newUserPin') || {}).value || '';
+    const pin2 = ($('#newUserPin2') || {}).value || '';
+    if (pin !== pin2) {
+      State.login.error = 'الرمزان غير متطابقين';
+      renderLogin();
+      return;
+    }
+    const res = Users.create(name, pin);
+    if (res.error) {
+      State.login.error = res.error;
+      renderLogin();
+      return;
+    }
+    doLogin(res.user.id);
+  }
+  function setUserChip(user) {
+    const chip = $('#userChip');
+    if (!chip) return;
+    if (!user) { chip.hidden = true; return; }
+    chip.hidden = false;
+    const av = $('#userAvatar');
+    const nm = $('#userName');
+    if (av) av.textContent = initial(user.name);
+    if (nm) nm.textContent = user.name;
+    chip.title = 'الحساب: ' + user.name;
+  }
+  async function logoutFlow() {
+    if (State.attempt) { toast('لا يمكن تسجيل الخروج أثناء الامتحان'); return; }
+    const u = Session.current();
+    const ok = await Modal.confirm({
+      title: 'تسجيل الخروج؟',
+      body: 'سيتم الخروج من حساب <b>' + escapeHtml(u ? u.name : '') + '</b>. نتائجك وتقدّمك محفوظة، ويمكنك الدخول بحساب آخر.',
+      okText: 'تسجيل الخروج'
+    });
+    if (!ok) return;
+    Session.logout();
+    location.reload();
+  }
+  async function deleteUser(id) {
+    const u = Users.find(id);
+    if (!u) return;
+    const ok = await Modal.confirm({
+      title: 'حذف الحساب «' + escapeHtml(u.name) + '»؟',
+      body: 'سيتم حذف هذا الحساب مع كل نتائجه وبنك أخطائه وإعداداته نهائياً. لا يمكن التراجع.',
+      okText: 'حذف نهائي', danger: true
+    });
+    if (!ok) return;
+    const wasCurrent = Session.id() === id;
+    Users.remove(id);
+    if (wasCurrent) { Session.logout(); location.reload(); return; }
+    State.login.error = '';
+    renderLogin();
+    toast('تم حذف الحساب', 'ok');
+  }
+  function submitAccountPin() {
+    const u = Session.current();
+    if (!u) return;
+    const pin = ($('#acctPin') || {}).value || '';
+    const pin2 = ($('#acctPin2') || {}).value || '';
+    if (pin !== pin2) { toast('الرمزان غير متطابقين', 'err'); return; }
+    if (pin && pin.length < 3) { toast('الرمز يجب أن يكون 3 خانات على الأقل', 'err'); return; }
+    Users.setPin(u.id, pin);
+    renderSettings();
+    toast(pin ? 'تم تعيين رمز الدخول' : 'تم إلغاء رمز الدخول', 'ok');
+  }
+  function submitAccountRename() {
+    const u = Session.current();
+    if (!u) return;
+    const name = ($('#acctName') || {}).value || '';
+    if (!String(name).trim()) { toast('يرجى إدخال الاسم', 'err'); return; }
+    Users.rename(u.id, name);
+    const fresh = Users.find(u.id);
+    setUserChip(fresh);
+    renderSettings();
+    toast('تم تحديث الاسم', 'ok');
   }
 
   /* ============================================================
@@ -269,6 +473,10 @@
   const iconTrash = (s) => svg('<path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/>', s);
   const iconPrint = (s) => svg('<path d="M7 9V3h10v6"/><rect x="4" y="9" width="16" height="8" rx="2"/><path d="M7 14h10v7H7z"/>', s);
   const iconHome = (s) => svg('<path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/>', s);
+  const iconLock = (s) => svg('<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>', s);
+  const iconPlus = (s) => svg('<path d="M12 5v14M5 12h14"/>', s);
+  const iconUser = (s) => svg('<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/>', s);
+  const iconLogout = (s) => svg('<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/>', s);
 
   /* ============================================================
      شاشة إعداد الامتحان
@@ -962,6 +1170,41 @@
 
     html += '<div class="res-grid">';
 
+    /* بطاقة الحساب الحالي */
+    const me = Session.current();
+    if (me) {
+      const st = Users.stats(me.id);
+      html += '<div class="card"><div class="card-head"><h3 class="card-title">' + iconUser() + ' الحساب الحالي</h3></div>' +
+        '<div class="stack">' +
+          '<div class="account-row">' +
+            '<span class="user-avatar">' + escapeHtml(initial(me.name)) + '</span>' +
+            '<span class="account-info"><strong>' + escapeHtml(me.name) + '</strong>' +
+              '<span>' + (st.attempts ? st.attempts + ' محاولة محفوظة' : 'لا توجد محاولات بعد') +
+              ' • ' + (Users.hasPin(me) ? 'محمي برمز دخول' : 'بدون رمز دخول') + '</span></span>' +
+          '</div>' +
+          '<div class="summary-div"></div>' +
+          '<div class="field"><label for="acctName">تغيير الاسم</label>' +
+            '<input type="text" id="acctName" maxlength="40" value="' + escapeHtml(me.name) + '" />' +
+            '<button class="btn btn-soft btn-sm" data-action="account-rename" style="margin-top:8px;align-self:flex-start">حفظ الاسم</button>' +
+          '</div>' +
+          '<div class="summary-div"></div>' +
+          '<div class="row">' +
+            '<div class="field" style="flex:1;min-width:150px"><label>رمز دخول جديد</label>' +
+              '<input type="password" id="acctPin" inputmode="numeric" autocomplete="off" placeholder="اتركه فارغاً للإلغاء" /></div>' +
+            '<div class="field" style="flex:1;min-width:150px"><label>تأكيد الرمز</label>' +
+              '<input type="password" id="acctPin2" inputmode="numeric" autocomplete="off" /></div>' +
+          '</div>' +
+          '<button class="btn btn-soft" data-action="account-save-pin">حفظ رمز الدخول</button>' +
+          '<div class="summary-div"></div>' +
+          '<div class="account-actions">' +
+            '<button class="btn btn-ghost" data-action="logout">' + iconLogout(16) + ' تسجيل الخروج / تبديل المستخدم</button>' +
+            '<button class="btn btn-danger" data-action="account-delete">حذف هذا الحساب</button>' +
+          '</div>' +
+          '<div class="small muted">كل مستخدم يملك سجلاً وبنك أخطاء وإعدادات منفصلة تماماً عن الآخرين على نفس الجهاز.</div>' +
+        '</div>' +
+      '</div>';
+    }
+
     html += '<div class="card"><div class="card-head"><h3 class="card-title">' + iconFlag() + ' سلوك الامتحان</h3></div>' +
       '<div class="stack">' +
         switchRow('set-shuffle-options', 'خلط ترتيب الخيارات', 'يُستخدم كافتراضي لكل امتحان جديد', s.shuffleOptions) +
@@ -989,7 +1232,7 @@
         '<div class="summary-div"></div>' +
         '<button class="btn btn-ghost" data-action="theme-toggle">تبديل الوضع الليلي / النهاري</button>' +
         '<button class="btn btn-danger" data-action="reset-settings">استعادة الإعدادات الافتراضية</button>' +
-        '<button class="btn btn-danger" data-action="wipe-all">حذف كل البيانات (البنك والسجل والإعدادات)</button>' +
+        '<button class="btn btn-danger" data-action="wipe-all">حذف بيانات هذا المستخدم (البنك والسجل والإعدادات)</button>' +
       '</div>' +
     '</div>';
 
@@ -1053,7 +1296,7 @@
      ============================================================ */
   function bindEvents() {
     /* التنقل والثيم */
-    $('#brandHome').addEventListener('click', e => { e.preventDefault(); showView('home'); });
+    $('#brandHome').addEventListener('click', e => { e.preventDefault(); navigate('home'); });
     $('#navToggle').addEventListener('click', () => $('#mainNav').classList.toggle('open'));
     $('#themeToggle').addEventListener('click', toggleTheme);
 
@@ -1122,7 +1365,59 @@
         case 'backup-all': backupAll(); break;
         case 'restore-all': restoreAll(); break;
         case 'wipe-all': wipeAll(); break;
+
+        /* الحساب والدخول */
+        case 'login-pick':
+          if (el.dataset.id) {
+            const picked = Users.find(el.dataset.id);
+            if (!picked) break;
+            if (Users.hasPin(picked)) {
+              State.login.mode = 'pin';
+              State.login.userId = picked.id;
+              State.login.error = '';
+              renderLogin();
+            } else {
+              doLogin(picked.id);
+            }
+          }
+          break;
+        case 'login-new':
+          State.login.mode = 'new';
+          State.login.error = '';
+          renderLogin();
+          break;
+        case 'login-cancel':
+          State.login.mode = Users.count() ? 'list' : 'new';
+          State.login.userId = null;
+          State.login.error = '';
+          renderLogin();
+          break;
+        case 'login-delete':
+          if (el.dataset.id) deleteUser(el.dataset.id);
+          break;
+        case 'logout': logoutFlow(); break;
+        case 'account-save-pin': submitAccountPin(); break;
+        case 'account-rename': submitAccountRename(); break;
+        case 'account-delete':
+          if (Session.id()) deleteUser(Session.id());
+          break;
       }
+    });
+
+    /* إرسال نماذج الدخول */
+    document.addEventListener('submit', e => {
+      const form = e.target.closest ? e.target.closest('[data-login-form]') : null;
+      if (!form) return;
+      e.preventDefault();
+      if (form.dataset.loginForm === 'pin') submitPinForm();
+      else submitCreateForm();
+    });
+
+    /* زر الحساب في الشريط العلوي */
+    const chip = $('#userChip');
+    if (chip) chip.addEventListener('click', () => {
+      if (State.attempt) { toast('لا يمكن تغيير الحساب أثناء الامتحان'); return; }
+      navigate('settings');
     });
 
     /* تغييرات الإدخال */
@@ -1173,6 +1468,7 @@
 
   /* ---------------- منطق مساعد للأحداث ---------------- */
   function navigate(name) {
+    if (!Session.current()) { renderLogin(); showView('login'); return; }
     if (State.attempt && name !== 'exam') {
       stopTimer();
     }
@@ -1190,7 +1486,7 @@
   function toggleTheme() {
     const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', cur);
-    Settings.update({ theme: cur });
+    if (Session.current()) Settings.update({ theme: cur });
   }
 
   function baseConfig(extra) {
@@ -1468,15 +1764,16 @@
     });
   }
   async function wipeAll() {
+    const me = Session.current();
     const ok = await Modal.confirm({
-      title: 'حذف كل البيانات؟',
-      body: 'سيتم حذف بنك الأخطاء وسجل النتائج والإعدادات نهائياً.',
+      title: 'حذف بيانات هذا المستخدم؟',
+      body: 'سيتم حذف بنك الأخطاء وسجل النتائج والإعدادات الخاصة بحساب <b>' + escapeHtml(me ? me.name : '') + '</b> نهائياً. بقية المستخدمين لا يتأثرون.',
       okText: 'حذف الكل', danger: true
     });
     if (!ok) return;
     Bank.clear(); History.clear(); Settings.reset(); ActiveAttempt.clear();
     applyTheme(); refreshBadges(); renderSettings(); renderHome();
-    toast('تم حذف كل البيانات', 'ok');
+    toast('تم حذف بيانات هذا المستخدم', 'ok');
   }
 
   /* ---------------- الثيم ---------------- */
@@ -1490,10 +1787,29 @@
      ============================================================ */
   function init() {
     applyTheme();
-    if (!Store.available) $('#storageWarning').hidden = false;
     $('#footerCount').textContent = DB.total;
-    refreshBadges();
     bindEvents();
+    if (!Store.available) $('#storageWarning').hidden = false;
+
+    if (!Store.available) {
+      /* التخزين غير متاح: لا يمكن حفظ الحسابات — نعمل بالوضع القديم بدون شاشة دخول */
+      refreshBadges();
+      renderHome();
+      showView('home');
+      return;
+    }
+
+    const user = Session.current();
+    if (!user) {
+      /* لا يوجد مستخدم مسجّل: اعرض شاشة الدخول فقط */
+      State.login = { mode: Users.count() ? 'list' : 'new', userId: null, error: '' };
+      renderLogin();
+      showView('login');
+      return;
+    }
+
+    setUserChip(user);
+    refreshBadges();
     renderHome();
     showView('home');
 
@@ -1507,5 +1823,5 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 
-  window.AppDebug = { State, DB, Bank, History, Settings, Quiz, Store };
+  window.AppDebug = { State, DB, Bank, History, Settings, Quiz, Store, Users, Session };
 })();
