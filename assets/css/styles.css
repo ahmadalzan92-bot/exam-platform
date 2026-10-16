@@ -104,6 +104,11 @@ html[data-theme="dark"] .app-bg {
 .brand-text { display:flex; flex-direction:column; line-height:1.25; }
 .brand-text strong { font-size: 1.06rem; font-weight: 800; letter-spacing:-.2px; }
 .brand-text small { color: var(--text-mute); font-size: .76rem; }
+.brand-credit { font-size:.71rem; font-weight:700; color: var(--text-mute); margin-top:2px; }
+.brand-credit b { color: var(--brand-700s); font-weight:800; }
+html[data-theme="dark"] .brand-credit b { color: var(--brand-200); }
+.print-credit { display:none; }
+.print-credit b { font-weight:800; }
 
 .main-nav { display:flex; gap:6px; margin-inline-start: auto; }
 .nav-btn {
@@ -150,6 +155,15 @@ main { flex:1; width:100%; max-width: var(--maxw); margin:0 auto; padding: 22px 
   gap:8px; align-items:center; color: var(--text-mute); font-size:.82rem;
 }
 .footer-inner .dot { opacity:.5; }
+.footer-credit { font-weight:700; }
+.footer-credit b { color: var(--brand-700s); font-weight:800; }
+html[data-theme="dark"] .footer-credit b { color: var(--brand-200); }
+.credit-line {
+  margin-top:20px; padding-top:16px; border-top:1px solid var(--border);
+  text-align:center; font-size:.82rem; font-weight:700; color: var(--text-mute); line-height:1.9;
+}
+.credit-line b { color: var(--brand-700s); font-weight:800; font-size:.95rem; }
+html[data-theme="dark"] .credit-line b { color: var(--brand-200); }
 
 /* ---------- Generic components ---------- */
 .card {
@@ -328,6 +342,13 @@ html[data-theme="dark"] .opt-tile.is-selected { background: var(--brand-100); }
   padding:12px 16px; margin-bottom:16px; box-shadow: var(--shadow-sm);
 }
 .exam-top-row { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+.exam-credit {
+  display:flex; align-items:center; gap:7px; margin-top:10px; padding-top:9px;
+  border-top:1px dashed var(--border); font-size:.76rem; font-weight:700; color: var(--text-mute);
+}
+.exam-credit svg { color: var(--gold-500); flex:none; }
+.exam-credit b { color: var(--brand-700s); font-weight:800; }
+html[data-theme="dark"] .exam-credit b { color: var(--brand-200); }
 .exam-title { font-weight:800; font-size:1rem; }
 .timer {
   display:inline-flex; align-items:center; gap:8px; font-weight:800; font-variant-numeric: tabular-nums;
@@ -520,4 +541,9 @@ table.data tbody tr:last-child td { border-bottom:none; }
   .topbar, .site-footer, .toast-wrap, .exam-nav, .review-toolbar, .btn, .modal-backdrop { display:none !important; }
   body { background:#fff; color:#000; }
   .card, .review-item { box-shadow:none; border-color:#bbb; break-inside: avoid; }
+  .print-credit { display:block !important; }
+  .exam-credit { display:flex !important; border-color:#999 !important; }
+  .credit-line { display:block !important; border-color:#999 !important; }
+  .print-credit, .exam-credit, .credit-line, .print-credit b, .exam-credit b, .credit-line b { color:#000 !important; }
+  .exam-credit svg { color:#000 !important; }
 }

@@ -442,6 +442,10 @@
         '<button class="btn btn-ghost btn-sm" data-action="nav" data-nav="home">خروج</button>' +
         '<button class="btn btn-primary btn-sm" data-action="finish">إنهاء الامتحان</button>' +
       '</div>' +
+      '<div class="exam-credit">' +
+        '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.4 5.1 5.6.8-4.1 4 .9 5.6L12 15.8 7.2 18.5l.9-5.6-4.1-4 5.6-.8Z"/></svg>' +
+        '<span>إعداد وتصميم <b>المهندس أحمد الزن</b></span>' +
+      '</div>' +
     '</div>';
 
     html += '<div class="exam-layout">' +
@@ -717,6 +721,8 @@
       '</div>' +
       '<div id="reviewList">' + reviewListHtml(attempt) + '</div>' +
     '</div>';
+
+    html += '<div class="credit-line">إعداد وتصميم <b>المهندس أحمد الزن</b><br>منصة الامتحان المحوسب — علوم الإنتاج الحيواني</div>';
 
     $('#view-result').innerHTML = html;
   }
