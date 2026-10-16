@@ -50,6 +50,27 @@ jobs:
           unzip -q gradle.zip -d "$HOME"
           echo "$HOME/gradle-8.7/bin" >> "$GITHUB_PATH"
 
+      - name: Prepare signing key (permanent)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p android
+          if gh release download signing-key --pattern exam.keystore --dir android --clobber > /dev/null 2>&1; then
+            echo "keystore: restored from the permanent signing-key release"
+          else
+            echo "keystore: not found, creating a new permanent key"
+            keytool -genkeypair -v -keystore android/exam.keystore -alias exam \
+              -keyalg RSA -keysize 2048 -validity 12000 -storetype PKCS12 \
+              -storepass examplatform -keypass examplatform \
+              -dname "CN=Eng Ahmad Al-Zan, OU=Exam Platform, O=Exam Platform, L=Amman, C=JO"
+            gh release create signing-key android/exam.keystore \
+              --title "مفتاح توقيع التطبيق — لا تحذفه" \
+              --notes "مفتاح التوقيع الدائم لتطبيق الأندرويد. وجوده ضروري لتثبيت التحديثات فوق النسخة القديمة بدون حذف النتائج." \
+              > /dev/null 2>&1 || gh release upload signing-key android/exam.keystore --clobber > /dev/null 2>&1 || true
+          fi
+          ls -lh android/exam.keystore
+          keytool -list -keystore android/exam.keystore -storepass examplatform | head -12
+
       - name: Copy the website into the app assets
         run: |
           mkdir -p android/app/src/main/assets/www
@@ -58,13 +79,13 @@ jobs:
           find android/app/src/main/assets/www -maxdepth 2 -type f | sort | head -30
           du -sh android/app/src/main/assets/www
 
-      - name: Build debug APK
+      - name: Build release APK
         working-directory: android
-        run: gradle assembleDebug --no-daemon --stacktrace
+        run: gradle assembleRelease --no-daemon --stacktrace
 
       - name: Rename APK
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk exam-app.apk
+          cp android/app/build/outputs/apk/release/app-release.apk exam-app.apk
           ls -lh exam-app.apk
 
       - name: Upload APK artifact

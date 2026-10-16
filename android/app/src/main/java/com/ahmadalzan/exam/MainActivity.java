@@ -160,6 +160,7 @@ public class MainActivity extends Activity {
         s.setUseWideViewPort(true);
         s.setSupportZoom(false);
         s.setBuiltInZoomControls(false);
+        s.setAllowFileAccess(true);
         s.setAllowContentAccess(true);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             s.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
@@ -202,7 +203,7 @@ public class MainActivity extends Activity {
             public void onPageFinished(WebView view, String url) {
                 pageFinished = true;
                 cancelTimeout();
-                hideOverlay();
+                checkPlatformStarted(view);
             }
 
             @Override
@@ -263,6 +264,52 @@ public class MainActivity extends Activity {
                 });
     }
 
+    private void checkPlatformStarted(WebView view) {
+        final String probe = "(function(){try{"
+                + "var p=[];"
+                + "p.push('app=' + (typeof window.AppDebug));"
+                + "p.push('data=' + (typeof window.EXAM_DATA));"
+                + "p.push('views=' + document.querySelectorAll('.view').length);"
+                + "p.push('home=' + ((document.getElementById('view-home')||{}).childElementCount||0));"
+                + "p.push('ls=' + (function(){try{localStorage.setItem('__t','1');localStorage.removeItem('__t');return 'ok';}catch(e){return 'blocked';}})());"
+                + "return p.join(' ');"
+                + "}catch(e){return 'EXC: ' + e.message;}})()";
+        try {
+            view.evaluateJavascript(probe, new ValueCallback<String>() {
+                @Override
+                public void onValueChange(String value) {
+                    boolean ok = value != null && value.indexOf("app=object") >= 0;
+                    if (ok) {
+                        hideOverlay();
+                    } else {
+                        log("probe result: " + value);
+                        if (!triedFallback) {
+                            triedFallback = true;
+                            log("محاولة تحميل بديلة من ملفات التطبيق المدمجة");
+                            showOverlay("جارٍ تجربة طريقة تحميل بديلة...",
+                                    deviceInfo() + "\n" + logText(), null, null);
+                            if (web != null) {
+                                web.loadUrl(FALLBACK_URL);
+                            }
+                            return;
+                        }
+                        showOverlay("المنصة لم تبدأ بشكل صحيح",
+                                "نتيجة الفحص: " + value + "\n\n" + deviceInfo() + "\n" + logText(),
+                                "إظهار الصفحة على أي حال", new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        hideOverlay();
+                                    }
+                                });
+                    }
+                }
+            });
+        } catch (Throwable t) {
+            log("probe: " + describe(t));
+            hideOverlay();
+        }
+    }
+
     private void startTimeout() {
         cancelTimeout();
         timeoutRunnable = new Runnable() {
@@ -270,7 +317,7 @@ public class MainActivity extends Activity {
             public void run() {
                 if (!pageFinished) {
                     showOverlay("تأخر تحميل المنصة",
-                            "لم تنتهِ الصفحة من التحميل خلال 15 ثانية.\n\n"
+                            "لم تنتهِ الصفحة من التحميل خلال 25 ثانية.\n\n"
                                     + deviceInfo() + "\n" + logText(),
                             "إظهار الصفحة على أي حال", new Runnable() {
                                 @Override
@@ -281,7 +328,7 @@ public class MainActivity extends Activity {
                 }
             }
         };
-        handler.postDelayed(timeoutRunnable, 15000);
+        handler.postDelayed(timeoutRunnable, 25000);
     }
 
     private void cancelTimeout() {

@@ -10,9 +10,20 @@ android {
     applicationId 'com.ahmadalzan.exam'
     minSdk 24
     targetSdk 34
-    versionCode 2
-    versionName '1.1'
+    versionCode 3
+    versionName '1.2'
     resConfigs 'ar', 'en'
+  }
+
+  // مفتاح التوقيع الدائم: ينشئه سير العمل مرة واحدة ويُستخدم دائماً
+  // حتى تُثبَّت التحديثات فوق النسخة القديمة بدون فقدان النتائج.
+  signingConfigs {
+    release {
+      storeFile file('exam.keystore')
+      storePassword 'examplatform'
+      keyAlias 'exam'
+      keyPassword 'examplatform'
+    }
   }
 
   // The whole website is copied into src/main/assets/www by the build workflow.
@@ -24,7 +35,8 @@ android {
     }
     release {
       minifyEnabled false
-      signingConfig signingConfigs.debug
+      shrinkResources false
+      signingConfig signingConfigs.release
     }
   }
 
