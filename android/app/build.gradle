@@ -19,7 +19,7 @@ android {
   // حتى تُثبَّت التحديثات فوق النسخة القديمة بدون فقدان النتائج.
   signingConfigs {
     release {
-      storeFile file('exam.keystore')
+      storeFile file('../exam.keystore')
       storePassword 'examplatform'
       keyAlias 'exam'
       keyPassword 'examplatform'
