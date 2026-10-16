@@ -277,7 +277,7 @@ public class MainActivity extends Activity {
         try {
             view.evaluateJavascript(probe, new ValueCallback<String>() {
                 @Override
-                public void onValueChange(String value) {
+                public void onReceiveValue(String value) {
                     boolean ok = value != null && value.indexOf("app=object") >= 0;
                     if (ok) {
                         hideOverlay();
